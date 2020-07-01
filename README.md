@@ -1,4 +1,4 @@
-# LcdMenu
+# Arduino LcdMenu
 Simple Arduino LCD menu
 
 Supports multi level submenus
