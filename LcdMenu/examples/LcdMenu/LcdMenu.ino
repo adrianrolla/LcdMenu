@@ -21,6 +21,25 @@ int displayMillis(LcdMenuItem * menuItem) {
   return -1;
 }
 
+int clicks = 0;
+char countClicksBuf[30];
+const char *clickCountMenuItem(LcdMenuItem * menuItem) {
+  strncpy( countClicksBuf, (String("Clicks: ")+clicks).c_str(), sizeof(countClicksBuf)-1 ) ;
+  return countClicksBuf;
+}
+
+int addClick(LcdMenuItem * menuItem){
+  clicks++;
+  Serial.println("Menu addClick");
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("addClick, now:");
+  lcd.setCursor(0,1);
+  lcd.print(clicks);
+  delay(3000);
+  return -1;
+}
+
 int displaySecs(LcdMenuItem * menuItem) {
   Serial.println("Menu clickDisplaySecs");
   lcd.clear();
@@ -64,31 +83,26 @@ int backOrStayAtRandom(LcdMenuItem * menuItem) {
 // 
 LcdMenuItem menuItems[] {
   //id        text                updn          doOnClick         cursorIdAfterClick
-  { 0,        "Menu home",        LcdMenu::NONE,   NULL,             1},  // id 0 is home. on click show items starting id:1-"(back)"
+  { 1,        "Millis",NULL,           LcdMenu::DN,     &displayMillis,  -1},  // on click displayMillis and stay there
+  { 2,        "Secs &back home",NULL,  LcdMenu::UPDN,   &displaySecs,     0},  // on click displaySecs and go back to id:0-menu home
+  { 3,        NULL,&clickCountMenuItem,       LcdMenu::UPDN,   &addClick,       -1},  // use textFunction, on click do 'addClick' and stay there"
+  { 4,        "More",NULL,             LcdMenu::UPDN,   NULL,             40}, // on click show menu items starting on id 40-"(back)"
+  { 9,        "Even More",NULL,        LcdMenu::UP,     NULL,             90}, // last menu item of list (UP only), on click show menu items starting on id 90-"(back)"
 
-  // menu item group. id's has to be consecutive within level/group.
-  { 1,        "(back)",           LcdMenu::DN,     NULL,             0},  // first menu item of list (DN only), on click go back to id:0-menu home
-  { 2,        "Millis",           LcdMenu::UPDN,   &displayMillis,  -1},  // on click displayMillis and stay there
-  { 3,        "Secs &back home",  LcdMenu::UPDN,   &displaySecs,     0},  // on click displaySecs and go back to id:0-menu home
-  { 4,        "More",             LcdMenu::UPDN,   NULL,             40}, // on click show menu items starting on id 40-"(back)"
-  { 5,        "Even More",        LcdMenu::UP,     NULL,             90}, // last menu item of list (UP only), on click show menu items starting on id 90-"(back)"
+  // menu item group. id's has to be located consecutive within level/group.
+  { 40,       "(back)",NULL,           LcdMenu::DN,     NULL,             4},  // first menu item of list (DN only), on click go back to menu id 4-"More"
+  { 41,       "Foo",NULL,              LcdMenu::UPDN,   &LcdMenu::doClick,-1}, // on click do defalut LcdMenu::doClick, and stay there
+  { 42,       "Random 0..100",NULL,    LcdMenu::UPDN,   &displayRandom,   -1}, // on click do displayRandom0to100 and stay there
+  { 43,       "Random & back",NULL,    LcdMenu::UPDN,   &displayRandom,   4},  // on click doClickRandom and go back to menu id 4-"More"
+  { 44,       "Back/Stay random",NULL, LcdMenu::UP,     &backOrStayAtRandom,-1}, // last menu item of list (UP only), on click backOrStayAtRandom (decide random if back to id 4-"More", or stay there)
 
-  // menu item group. id's has to be consecutive within level/group.
-  // started with id:40 just to diferentiate from previous menu, but if started with id:6 it would be ok too.
-  { 40,       "(back)",           LcdMenu::DN,     NULL,             4},  // first menu item of list (DN only), on click go back to menu id 4-"More"
-  { 41,       "Foo",              LcdMenu::UPDN,   &LcdMenu::doClick,-1}, // on click do defalut LcdMenu::doClick, and stay there
-  { 42,       "Random 0..100",    LcdMenu::UPDN,   &displayRandom,   -1}, // on click do displayRandom0to100 and stay there
-  { 43,       "Random & back",    LcdMenu::UPDN,   &displayRandom,   4},  // on click doClickRandom and go back to menu id 4-"More"
-  { 44,       "Back/Stay random", LcdMenu::UP,     &backOrStayAtRandom,-1}, // last menu item of list (UP only), on click backOrStayAtRandom (decide random if back to id 4-"More", or stay there)
-
-  // menu item group. id's has to be consecutive within level/group.
-  // started with id:90 just to diferentiate from previous menu, but if started with id:45 it would be ok too.
-  { 90,       "(back)",           LcdMenu::DN,     NULL,             5},  // first menu item of list (DN only), on click go back to menu id 5-"Even More"
-  { 91,       "Even more 1",      LcdMenu::UPDN,   NULL,             5},  // on click go back to menu id 5-"Even More"
-  { 92,       "Even more 2",      LcdMenu::UP,     NULL,             5},  // last item of list (UP only), on click go back to menu id 5-"Even More"
+  // menu item group. id's has to be located consecutive within level/group.
+  { 90,       "(back)",NULL,           LcdMenu::DN,     NULL,             9},  // first menu item of list (DN only), on click go back to menu id 5-"Even More"
+  { 91,       "Even more 1",NULL,      LcdMenu::UPDN,   NULL,             9},  // on click go back to menu id 5-"Even More"
+  { 92,       "Even more 2",NULL,      LcdMenu::UP,     NULL,             9},  // last item of list (UP only), on click go back to menu id 5-"Even More"
 
   // DO NOT REMOVE NOR CHANGE. End of menu definition. 
-  { -1,       NULL,               LcdMenu::NONE,   NULL,             0 }
+  { -1,       NULL,NULL,               LcdMenu::NONE,   NULL,             0 }
 };
 
 LcdMenu lcdMenu = LcdMenu(menuItems);

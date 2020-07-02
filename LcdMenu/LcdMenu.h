@@ -3,7 +3,8 @@
 
 typedef struct LcdMenuItem {
   int id;
-  char *text;
+  const char *text;
+  const char *(*textFunction)(LcdMenuItem * menuItem);
   int updn;
   int (*doOnClick)(LcdMenuItem * menuItem);
   int cursorIdAfterClick;
@@ -16,7 +17,7 @@ class LcdMenu {
     static const int UP = 1;
     static const int DN = 2;
     static const int UPDN = 3;
-    byte homeRow = 1;
+
     char cursorChar = 0b01111110;
     char backCursorChar = 0b01111111;
     int cursor = 0;
@@ -26,56 +27,62 @@ class LcdMenu {
       this->items = items;
     }
     void home( int homeRow = 1 ) {
-      this->homeRow = homeRow % 2;
-      cursor = line0 = 0;
-      lcd.setCursor(0, 1 - this->homeRow); // clear line not used for home
-      lcd.print( LCD_EMPTYROW );
+      cursor = line0 = items[0].id;        // first row is home
       displayCurrent();
     }
-    void displayCurrent() {
-      if (cursor == 0) {
-        displayStartMenu();
+    void lcdPrintText( LcdMenuItem *item ){
+      if ( item->text != NULL ){
+         lcd.print( item->text );
+      } else if ( item->textFunction != NULL ){
+         lcd.print( item->textFunction( item ) );
       } else {
-        displayLines();
+         lcd.print( "menu-id-" );
+         lcd.print( item->id );
       }
     }
-    void displayStartMenu() {
-      lcd.setCursor(0, this->homeRow);
-      lcd.print( cursorChar );
-      lcd.print( items[getIndex(cursor)].text );
-      lcd.print( LCD_EMPTYROW );
-    }
-    void displayLines() {
+    void displayCurrent() {
       int line0Index = getIndex(line0);
-      int line1Index = getIndex(line0+1);
       lcd.setCursor(0, 0);
       lcd.print( cursor == line0 ? ( canMoveUp( items[line0Index].updn ) ? cursorChar : backCursorChar ) : ' ');
-      lcd.print( items[line0Index].text );
+      lcdPrintText( &items[line0Index] );
       lcd.print( LCD_EMPTYROW );
       lcd.setCursor(0, 1);
-      lcd.print( cursor == line0 + 1 ? cursorChar : ' ');
-      lcd.print( items[line1Index].text );
+      lcd.print( cursor == items[line0Index+1].id ? cursorChar : ' ');
+      lcdPrintText( &items[line0Index+1] );
       lcd.print( LCD_EMPTYROW );
     }
     bool canMoveUp( int updn ) { return (updn & UP) != 0; }
     bool canMoveDown( int updn ) { return (updn & DN) != 0; }
     void up() {
+      Serial.print("up cursor:");
+      Serial.print(cursor);
       int indexCursor = getIndex(cursor);
+      Serial.print(", ix:");
+      Serial.print(indexCursor);
       if ( canMoveUp(items[indexCursor].updn) ) {
-        cursor--;
-        if (line0 > cursor) {
+        Serial.print(", can UP");
+        cursor = items[indexCursor-1].id; // move to previous item
+        Serial.print(", new cursor:");
+        Serial.print(cursor);
+        Serial.print(", line0:");
+        Serial.print(indexCursor);
+        if (line0 != cursor) {
           line0 = cursor;
         }
+        Serial.print(", new line0:");
+        Serial.print(indexCursor);
       }
+      Serial.println();
+      Serial.flush();
       displayCurrent();
     }
     void down() {
       int indexCursor = getIndex(cursor);
       if ( canMoveDown(items[indexCursor].updn) ) {
-        cursor++;
-        if (line0 < cursor - 1) {
-          line0 = cursor - 1;
+        if (line0 != cursor) {
+          line0 = cursor;
         }
+        cursor = items[indexCursor+1].id;
       }
       displayCurrent();
     }
@@ -99,7 +106,7 @@ class LcdMenu {
           if ( canMoveDown(items[indexCursor].updn) ) {
             line0 = cursor; // from cursor can go down, more items down...
           } else {
-            line0 = cursor -1; // cursor is last item on submenu, so line0 has to be previous item
+            line0 = items[ indexCursor -1 ].id; // cursor is last item on submenu, so line0 has to be previous item
           }
         }
       }
@@ -107,7 +114,7 @@ class LcdMenu {
     }
     int getIndex(int id) {
       int index = 0;
-      while ( items[index].id != id && items[index].text != NULL ) {
+      while ( items[index].id != id && items[index].id >= 0 ) {
         index++;
       }
       if (items[index].id == id) {
