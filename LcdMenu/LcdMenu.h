@@ -11,25 +11,10 @@ typedef struct LcdMenuItem {
 } LcdMenuItem;
 
 class LcdMenu {
-  public:
-    static constexpr char * LCD_EMPTYROW = "                ";
-    static const int NONE = 0;
-    static const int UP = 1;
-    static const int DN = 2;
-    static const int UPDN = 3;
-
-    char cursorChar = 0b01111110;
-    char backCursorChar = 0b01111111;
     int cursor = 0;
     int line0 = -1;
-    LcdMenuItem *items;
-    LcdMenu(LcdMenuItem *items) {
-      this->items = items;
-    }
-    void home( int homeRow = 1 ) {
-      cursor = line0 = items[0].id;        // first row is home
-      displayCurrent();
-    }
+    bool canMoveUp( int updn ) { return (updn & UP) != 0; }
+    bool canMoveDown( int updn ) { return (updn & DN) != 0; }
     void lcdPrintText( LcdMenuItem *item ){
       if ( item->text != NULL ){
          lcd.print( item->text );
@@ -40,10 +25,38 @@ class LcdMenu {
          lcd.print( item->id );
       }
     }
-    void displayCurrent() {
+    int getIndex(int id) {
+      int index = 0;
+      while ( items[index].id != id && items[index].id >= 0 ) {
+        index++;
+      }
+      if (items[index].id == id) {
+        return index;
+      } else {
+        return -1;
+      }
+    }
+  public:
+    static constexpr char * LCD_EMPTYROW = "                ";
+    static const int NONE = 0;
+    static const int UP = 1;
+    static const int DN = 2;
+    static const int UPDN = 3;
+
+    char cursorChar = 0b01111110;
+    char backCursorChar = 0b01111111;
+    LcdMenuItem *items;
+    LcdMenu(LcdMenuItem *items) {
+      this->items = items;
+    }
+    void home( int homeRow = 1 ) {
+      cursor = line0 = items[0].id;        // first row is home
+      displayMenu();
+    }
+    void displayMenu() {
       int line0Index = getIndex(line0);
       lcd.setCursor(0, 0);
-      lcd.print( cursor == line0 ? ( canMoveUp( items[line0Index].updn ) ? cursorChar : backCursorChar ) : ' ');
+      lcd.print( cursor == line0 ? ( (canMoveUp( items[line0Index].updn ) || line0Index == 0) ? cursorChar : backCursorChar ) : ' ');
       lcdPrintText( &items[line0Index] );
       lcd.print( LCD_EMPTYROW );
       lcd.setCursor(0, 1);
@@ -51,8 +64,6 @@ class LcdMenu {
       lcdPrintText( &items[line0Index+1] );
       lcd.print( LCD_EMPTYROW );
     }
-    bool canMoveUp( int updn ) { return (updn & UP) != 0; }
-    bool canMoveDown( int updn ) { return (updn & DN) != 0; }
     void up() {
       Serial.print("up cursor:");
       Serial.print(cursor);
@@ -74,7 +85,7 @@ class LcdMenu {
       }
       Serial.println();
       Serial.flush();
-      displayCurrent();
+      displayMenu();
     }
     void down() {
       int indexCursor = getIndex(cursor);
@@ -84,7 +95,7 @@ class LcdMenu {
         }
         cursor = items[indexCursor+1].id;
       }
-      displayCurrent();
+      displayMenu();
     }
     void click() {
       int indexCursor = getIndex(cursor);
@@ -110,18 +121,7 @@ class LcdMenu {
           }
         }
       }
-      displayCurrent();
-    }
-    int getIndex(int id) {
-      int index = 0;
-      while ( items[index].id != id && items[index].id >= 0 ) {
-        index++;
-      }
-      if (items[index].id == id) {
-        return index;
-      } else {
-        return -1;
-      }
+      displayMenu();
     }
     static int doClick( LcdMenuItem *menuItem ) {
       Serial.print("LcdMenu::doClick ");
