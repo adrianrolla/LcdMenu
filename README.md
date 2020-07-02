@@ -19,7 +19,7 @@ Just define menu items in a simple array specifiying for each entry:
 - Function to call on menu item "click" or selection. Function can return next item id to set menu "cursor" or just use hardcoded "next item id" for such menu item.
 - "Next item id" to set menu "cursor" after function call is executed.
 
-First row in menu items array is home menu item.
+First row in menu items array is menu 'home'.
 
 See example, usage is very simple.
 
