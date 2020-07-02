@@ -14,7 +14,7 @@ Supports multiple non/excluyent actions on menu item click:
 Just define menu items in a simple array specifiying for each entry:
 - id number for menu item. Must use 0 as id for "menu home".
 - Menu item text (if null 'Menu-id-ID' will be used)
-- Menu item function text (this has precedence to menu item text, if NULL, 'Menu item text' will be used).
+- Menu item function text (if you want to program menu item text during run time. This has precedence to menu item text, if NULL, 'Menu item text' will be used).
 - "Can move" flag, "DN": down on same menu level (first item on menu level), "UPDN": can move up/down on same menu level, or "UP": just up (last item on menu level).
 - Function to call on menu item "click" or selection. Function can return next item id to set menu "cursor" or just use hardcoded "next item id" for such menu item.
 - "Next item id" to set menu "cursor" after function call is executed.
